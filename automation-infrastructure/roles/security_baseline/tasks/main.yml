@@ -10,13 +10,6 @@
     msg: "Docker is required but was not found. Install Docker before running this playbook."
   when: docker_check.rc != 0
 
-# Make sure the Python Docker SDK is present, required by the docker_container module
-- name: Ensure Docker SDK for Python is installed
-  apt:
-    name: python3-docker
-    state: present
-    update_cache: true
-
 # Pull images over HTTPS only, registry already enforces this by default,
 # this task documents the assumption explicitly for the security review
 - name: Confirm Docker daemon is reachable
