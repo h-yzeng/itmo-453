@@ -7,7 +7,7 @@
     state: started
     restart_policy: always
     published_ports:
-      - "{{ service_port }}:80"
+      - "{{ service_port }}:8080"
 
     # Security baseline applied directly on the container
     user: "{{ container_user }}"

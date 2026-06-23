@@ -1,7 +1,7 @@
 ---
 # Service container settings
 service_name: webapp
-service_image: nginx:latest
+service_image: nginxinc/nginx-unprivileged:stable
 service_port: 8080
 
 # Logging settings
