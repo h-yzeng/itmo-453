@@ -1,0 +1,16 @@
+---
+# cAdvisor gives a live monitoring dashboard for all running containers,
+# no extra setup needed beyond running the container itself
+- name: Deploy cAdvisor monitoring container
+  community.docker.docker_container:
+    name: cadvisor
+    image: "{{ cadvisor_image }}"
+    state: started
+    restart_policy: always
+    published_ports:
+      - "{{ cadvisor_port }}:8080"
+    volumes:
+      - "/:/rootfs:ro"
+      - "/var/run:/var/run:ro"
+      - "/sys:/sys:ro"
+      - "/var/lib/docker/:/var/lib/docker:ro"

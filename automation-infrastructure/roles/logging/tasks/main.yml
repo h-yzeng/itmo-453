@@ -1,0 +1,10 @@
+---
+# Directory on the host where container logs get persisted
+- name: Create host log directory
+  file:
+    path: "/tmp/infra-framework-logs/{{ service_name }}"
+    state: directory
+    mode: "0755"
+
+# Logging config is applied to the container itself in service_deploy.yml
+# via log_driver and log_options, this role just prepares the destination
