@@ -12,9 +12,10 @@
 
 # Make sure the Python Docker SDK is present, required by the docker_container module
 - name: Ensure Docker SDK for Python is installed
-  pip:
-    name: docker
+  apt:
+    name: python3-docker
     state: present
+    update_cache: true
 
 # Pull images over HTTPS only, registry already enforces this by default,
 # this task documents the assumption explicitly for the security review
