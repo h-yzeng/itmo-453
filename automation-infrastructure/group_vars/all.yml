@@ -1,0 +1,18 @@
+---
+# Service container settings
+service_name: webapp
+service_image: nginx:latest
+service_port: 8080
+
+# Logging settings
+log_max_size: "10m"
+log_max_files: "3"
+
+# Monitoring settings
+cadvisor_image: gcr.io/cadvisor/cadvisor:latest
+cadvisor_port: 8081
+
+# Security baseline settings
+container_user: "1000"
+container_memory_limit: "256m"
+container_cpu_limit: "0.5"

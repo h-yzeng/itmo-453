@@ -1,0 +1,12 @@
+---
+# Main entry point, runs all four roles against the local Docker daemon
+- name: Deploy and configure operational service stack
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  roles:
+    - security_baseline
+    - logging
+    - monitoring
+    - service_deploy
