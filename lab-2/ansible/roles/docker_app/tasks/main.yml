@@ -1,0 +1,43 @@
+---
+- name: Install docker.io
+  apt:
+    name: docker.io
+    state: present
+    update_cache: true
+
+- name: Install python docker SDK for ansible docker modules
+  apt:
+    name: python3-docker
+    state: present
+
+- name: Install docker compose plugin
+  apt:
+    name: docker-compose-v2
+    state: present
+
+- name: Ensure docker service is running
+  systemd:
+    name: docker
+    enabled: true
+    state: started
+
+- name: Create app directory
+  file:
+    path: /opt/lab2-app
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy app container config
+  template:
+    src: docker-compose.yml.j2
+    dest: /opt/lab2-app/docker-compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Pull and start application container
+  command: docker compose up -d
+  args:
+    chdir: /opt/lab2-app

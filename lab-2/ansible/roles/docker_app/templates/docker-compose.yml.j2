@@ -1,0 +1,8 @@
+version: "3.9"
+services:
+  app:
+    image: nginx:stable
+    container_name: lab2-app
+    restart: unless-stopped
+    ports:
+      - "8080:80"
