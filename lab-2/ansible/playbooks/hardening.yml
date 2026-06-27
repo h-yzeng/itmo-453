@@ -1,0 +1,13 @@
+---
+- name: Apply baseline hardening
+  hosts: webservers
+  become: true
+  vars:
+    lab_users:
+      - name: deployer
+      - name: monitor
+  roles:
+    - users
+    - firewall
+    - ssh_hardening
+    - backup

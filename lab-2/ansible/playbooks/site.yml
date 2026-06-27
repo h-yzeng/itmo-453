@@ -1,0 +1,9 @@
+---
+# site.yml runs the full provisioning workflow in order.
+# Running this against a fresh host should produce an identical,
+# fully configured environment every time, demonstrating
+# repeatable provisioning and rebuild capability.
+
+- import_playbook: hardening.yml
+- import_playbook: webserver.yml
+- import_playbook: docker-deploy.yml

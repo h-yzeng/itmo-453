@@ -1,0 +1,6 @@
+---
+- name: Deploy containerized application
+  hosts: webservers
+  become: true
+  roles:
+    - docker_app
