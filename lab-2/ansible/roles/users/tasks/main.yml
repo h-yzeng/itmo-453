@@ -1,0 +1,24 @@
+---
+- name: Create standard users
+  user:
+    name: "{{ item.name }}"
+    shell: /bin/bash
+    create_home: true
+    state: present
+  loop: "{{ lab_users }}"
+
+- name: Ensure ssh directory exists for each user
+  file:
+    path: "/home/{{ item.name }}/.ssh"
+    state: directory
+    mode: "0700"
+    owner: "{{ item.name }}"
+    group: "{{ item.name }}"
+  loop: "{{ lab_users }}"
+
+- name: Add authorized keys
+  authorized_key:
+    user: "{{ item.name }}"
+    key: "{{ item.pubkey }}"
+  loop: "{{ lab_users }}"
+  when: item.pubkey is defined

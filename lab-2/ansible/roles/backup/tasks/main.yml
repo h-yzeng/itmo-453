@@ -1,0 +1,30 @@
+---
+- name: Create backup root directory
+  file:
+    path: /backups
+    state: directory
+    mode: "0750"
+
+- name: Create backup subdirectories
+  file:
+    path: "/backups/{{ item }}"
+    state: directory
+    mode: "0750"
+  loop:
+    - web
+    - database
+    - config
+
+- name: Install cron job for scheduled updates
+  cron:
+    name: "Lab2 weekly system update"
+    weekday: "0"
+    hour: "3"
+    minute: "0"
+    job: "/usr/local/bin/lab2-update-system.sh >> /var/log/lab2-automation/cron-update.log 2>&1"
+
+- name: Copy update script to target for cron use
+  copy:
+    src: ../../../scripts/01-update-system.sh
+    dest: /usr/local/bin/lab2-update-system.sh
+    mode: "0755"
