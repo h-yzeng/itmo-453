@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Lab 2 Web Server</title>
+</head>
+<body>
+  <h1>Deployed by Ansible</h1>
+  <p>Host: {{ inventory_hostname }}</p>
+  <p>Deployed on: {{ ansible_date_time.iso8601 }}</p>
+</body>
+</html>

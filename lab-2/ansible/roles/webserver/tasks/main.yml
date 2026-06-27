@@ -1,0 +1,21 @@
+---
+- name: Install nginx
+  apt:
+    name: nginx
+    state: present
+    update_cache: true
+
+- name: Deploy site index page
+  template:
+    src: index.html.j2
+    dest: /var/www/html/index.html
+    owner: www-data
+    group: www-data
+    mode: "0644"
+  notify: Restart nginx
+
+- name: Ensure nginx is enabled and running
+  systemd:
+    name: nginx
+    enabled: true
+    state: started
