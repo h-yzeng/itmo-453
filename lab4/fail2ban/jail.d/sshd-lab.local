@@ -1,0 +1,9 @@
+[sshd-lab]
+enabled = true
+filter = sshd-lab
+backend = polling
+logpath = /ssh-config/logs/openssh/current
+maxretry = 3
+findtime = 300
+bantime = 600
+banaction = iptables-allports
