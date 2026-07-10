@@ -1,0 +1,172 @@
+name: lab4
+
+networks:
+  frontend:
+  backend:
+    internal: true
+
+volumes:
+  prometheus-data:
+  grafana-data:
+  kuma-data:
+  ssh-config:
+
+services:
+
+  nginx:
+    image: nginxinc/nginx-unprivileged:1.27-alpine
+    container_name: nginx
+    restart: unless-stopped
+    depends_on:
+      - grafana
+      - uptime-kuma
+    ports:
+      - "127.0.0.1:443:8443"
+      - "127.0.0.1:8444:8444"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    networks:
+      - frontend
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_SERVER_ROOT_URL=https://localhost/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - frontend
+      - backend
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - backend
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.1
+    container_name: node-exporter
+    restart: unless-stopped
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+    networks:
+      - backend
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1.23.13
+    container_name: uptime-kuma
+    restart: unless-stopped
+    volumes:
+      - kuma-data:/app/data
+    networks:
+      - frontend
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+
+  ssh-target:
+    image: lscr.io/linuxserver/openssh-server:latest
+    container_name: ssh-target
+    hostname: ssh-target
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+      - USER_NAME=${SSH_USER}
+      - PASSWORD_ACCESS=true
+      - USER_PASSWORD=${SSH_PASSWORD}
+      - SUDO_ACCESS=false
+    ports:
+      - "127.0.0.1:2222:2222"
+    volumes:
+      - ssh-config:/config
+    networks:
+      - frontend
+    security_opt:
+      - no-new-privileges:true
+
+  fail2ban:
+    image: crazymax/fail2ban:1.1.0
+    container_name: fail2ban
+    restart: unless-stopped
+    network_mode: service:ssh-target
+    depends_on:
+      - ssh-target
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    environment:
+      - TZ=America/Chicago
+      - F2B_LOG_TARGET=STDOUT
+      - F2B_DB_PURGE_AGE=1d
+    volumes:
+      - ./fail2ban/jail.d:/data/jail.d:ro
+      - ./fail2ban/filter.d:/data/filter.d:ro
+      - ssh-config:/ssh-config:ro
+    security_opt:
+      - no-new-privileges:true
+
+  backup:
+    image: alpine:3.20
+    container_name: backup
+    restart: unless-stopped
+    command: crond -f -l 8
+    volumes:
+      - ./backup/crontab.txt:/etc/crontabs/root:ro
+      - ./backup:/scripts:ro
+      - ./backups:/backups
+      - grafana-data:/vol/grafana-data
+      - prometheus-data:/vol/prometheus-data
+      - kuma-data:/vol/kuma-data
+      - ssh-config:/vol/ssh-config
+    networks:
+      - backend
+    security_opt:
+      - no-new-privileges:true
