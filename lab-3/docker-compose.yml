@@ -1,16 +1,18 @@
 services:
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.5.4
     container_name: prometheus
     restart: unless-stopped
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
-    ports:
-      - "9090:9090"
+    networks:
+      - monitoring
+    # No host port published: Grafana and Uptime Kuma reach Prometheus over
+    # the internal Compose network at http://prometheus:9090.
 
   node-exporter:
-    image: prom/node-exporter:latest
+    image: prom/node-exporter:v1.11.1
     container_name: node-exporter
     restart: unless-stopped
     command:
@@ -18,55 +20,67 @@ services:
     pid: host
     volumes:
       - '/:/host:ro'
-    ports:
-      - "9100:9100"
+    networks:
+      - monitoring
+    # No host port published: only Prometheus scrapes this, over the
+    # internal Compose network.
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:13.1.0
     container_name: grafana
     restart: unless-stopped
     depends_on:
       - prometheus
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_SECURITY_DISABLE_BRUTE_FORCE_LOGIN_PROTECTION=true
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_SERVER_ROOT_URL=https://localhost/
+      - GF_SECURITY_CONTENT_SECURITY_POLICY=true
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./dashboards:/etc/dashboards:ro
       - grafana-data:/var/lib/grafana
-    ports:
-      - "3000:3000"
+    networks:
+      - monitoring
+    # No host port published: only reachable through the nginx reverse
+    # proxy, which terminates TLS and forwards to grafana:3000 internally.
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
+    image: gcr.io/cadvisor/cadvisor:v0.55.1
     container_name: cadvisor
     restart: unless-stopped
-    privileged: true
+    cap_add:
+      - SYS_ADMIN
     devices:
       - /dev/kmsg
     volumes:
       - /:/rootfs:ro
-      - /var/run:/var/run:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
-    ports:
-      - "8081:8080"
+    networks:
+      - monitoring
+    # No host port published: only Prometheus and Uptime Kuma reach this,
+    # over the internal Compose network. Runs unprivileged with only the
+    # SYS_ADMIN capability instead of full --privileged, and the broad
+    # /var/run and /dev/disk host mounts were dropped in favor of just the
+    # Docker socket that container discovery actually needs.
 
   loki:
-    image: grafana/loki:latest
+    image: grafana/loki:3.7.3
     container_name: loki
     restart: unless-stopped
     command: -config.file=/etc/loki/loki-config.yml
     volumes:
       - ./loki/loki-config.yml:/etc/loki/loki-config.yml:ro
       - loki-data:/loki
-    ports:
-      - "3100:3100"
+    networks:
+      - monitoring
+    # No host port published: only Grafana and Promtail reach this, over
+    # the internal Compose network.
 
   promtail:
-    image: grafana/promtail:latest
+    image: grafana/promtail:3.6.8
     container_name: promtail
     restart: unless-stopped
     command: -config.file=/etc/promtail/promtail-config.yml
@@ -75,6 +89,8 @@ services:
     volumes:
       - ./promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - monitoring
 
   uptime-kuma:
     image: louislam/uptime-kuma:1
@@ -84,9 +100,14 @@ services:
       - uptime-kuma-data:/app/data
     ports:
       - "3001:3001"
+    networks:
+      - monitoring
+    # Kept on the monitoring network on purpose: its whole job is to poll
+    # Prometheus, Grafana, and cAdvisor over HTTP, unlike the SSH honeypot
+    # below, which has no legitimate reason to reach any of these services.
 
   ssh-target:
-    image: lscr.io/linuxserver/openssh-server:latest
+    image: lscr.io/linuxserver/openssh-server:10.2_p1-r0-ls229
     container_name: ssh-target
     restart: unless-stopped
     environment:
@@ -97,7 +118,36 @@ services:
       - PASSWORD_ACCESS=true
       - USER_PASSWORD=labuser
     ports:
-      - "2222:2222"
+      - "127.0.0.1:2222:2222"
+    networks:
+      - honeypot
+    # Bound to loopback only, and on its own isolated network with no
+    # route to the monitoring services -- this container's credentials are
+    # intentionally weak, so it must never be reachable from anywhere but
+    # this machine, and a foothold here must not lead anywhere else.
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: nginx
+    restart: unless-stopped
+    depends_on:
+      - grafana
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - monitoring
+    # The only path to Grafana: terminates TLS with a self-signed cert
+    # (see nginx/generate-cert.sh), redirects plain HTTP to HTTPS, and adds
+    # the security headers Grafana itself was missing (CSP with a default-src
+    # fallback, X-Frame-Options, X-Content-Type-Options).
+
+networks:
+  monitoring:
+  honeypot:
 
 volumes:
   prometheus-data:
