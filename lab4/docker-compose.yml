@@ -10,6 +10,7 @@ volumes:
   grafana-data:
   kuma-data:
   ssh-config:
+  nginx-certs:
 
 services:
 
@@ -17,15 +18,12 @@ services:
     image: nginxinc/nginx-unprivileged:1.27-alpine
     container_name: nginx
     restart: unless-stopped
-    depends_on:
-      - grafana
-      - uptime-kuma
     ports:
       - "127.0.0.1:443:8443"
       - "127.0.0.1:8444:8444"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/certs:/etc/nginx/certs:ro
+      - nginx-certs:/etc/nginx/certs:ro
     networks:
       - frontend
     security_opt:
@@ -35,6 +33,30 @@ services:
     read_only: true
     tmpfs:
       - /tmp
+    depends_on:
+      cert-init:
+        condition: service_completed_successfully
+      grafana:
+        condition: service_started
+      uptime-kuma:
+        condition: service_started
+
+  cert-init:
+    image: alpine/openssl
+    container_name: cert-init
+    entrypoint: sh
+    command:
+      - -c
+      - |
+        if [ ! -f /certs/server.key ]; then
+          openssl req -x509 -newkey rsa:4096 -sha256 -days 365 -nodes \
+            -keyout /certs/server.key -out /certs/server.crt \
+            -subj "/CN=localhost" \
+            -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
+          chmod 644 /certs/server.key /certs/server.crt
+        fi
+    volumes:
+      - nginx-certs:/certs
 
   grafana:
     image: grafana/grafana:11.1.0
@@ -170,3 +192,4 @@ services:
       - backend
     security_opt:
       - no-new-privileges:true
+      

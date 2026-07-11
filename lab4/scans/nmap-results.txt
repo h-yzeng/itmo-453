@@ -1,0 +1,13 @@
+# Nmap 7.98 scan initiated Sat Jul 11 20:56:50 2026 as: /usr/bin/nmap -sV -p 1-65535 -oN /scans/nmap-results.txt 127.0.0.1
+Nmap scan report for localhost (127.0.0.1)
+Host is up (0.0000020s latency).
+Not shown: 65530 closed tcp ports (reset)
+PORT      STATE    SERVICE      VERSION
+111/tcp   open     rpcbind      2-4 (RPC #100000)
+443/tcp   filtered https
+2222/tcp  filtered EtherNetIP-1
+8444/tcp  filtered pcsync-http
+44101/tcp open     status       1 (RPC #100024)
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Sat Jul 11 20:56:58 2026 -- 1 IP address (1 host up) scanned in 8.10 seconds
