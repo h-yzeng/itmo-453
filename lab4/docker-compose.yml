@@ -94,7 +94,7 @@ services:
     read_only: true
 
   uptime-kuma:
-    image: louislam/uptime-kuma:1.23.13
+    image: louislam/uptime-kuma:1.23.17
     container_name: uptime-kuma
     restart: unless-stopped
     volumes:
