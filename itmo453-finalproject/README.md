@@ -3,7 +3,7 @@
 For my final project, I deployed a publicly accessible, TLS secured, monitored, and automatically deployed observability platform on an Oracle Cloud Always Free instance. I chose to make the monitoring stack itself the deployed service rather than bolting on a separate front end. Grafana sits behind a login at my main domain, and Uptime Kuma's public status page is visible with no login at my status subdomain.
 
 Dashboards: [https://henryzg.duckdns.org](https://henryzg.duckdns.org)
-Status page: [https://henryzg-status.duckdns.org](https://henryzg-status.duckdns.org)
+Status page: [https://henryzg-status.duckdns.org/status/default](https://henryzg-status.duckdns.org/status/default)
 
 ## Repository layout
 
