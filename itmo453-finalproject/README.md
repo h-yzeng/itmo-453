@@ -97,10 +97,10 @@ All 8 containers, proxy, grafana, prometheus, loki, promtail, node-exporter, cad
 ## 4. Verifying everything works
 
 1. `https://henryzg.duckdns.org` redirects HTTP to HTTPS and shows the Grafana login screen.
-2. I logged into Grafana with my `.env` credentials and confirmed both the Prometheus and Loki datasources show as connected.
+2. I logged into Grafana with my `.env` credentials and confirmed both the Prometheus and Loki datasources show as connected. (username: admin, password: 4385)
 3. I imported dashboard `1860` (Node Exporter Full), which worked fully out of the box against my stack.
 4. I was not able to get dashboard `14282` (Docker Container Monitoring) working. My cAdvisor container cannot resolve per-container read-write layer IDs against Docker 29.6.1's containerd image store, a genuine version incompatibility rather than a misconfiguration on my part, I confirmed this by trying two different cAdvisor versions and hitting the identical failure both times. My host-level CPU, memory, disk, and network metrics from Node Exporter Full are unaffected and fully cover my monitoring requirement. I explain the full diagnostic process in `docs/monitoring-setup.md`.
-5. `https://henryzg-status.duckdns.org` loads Uptime Kuma with no login required. I created two HTTPS monitors, one for my main domain and one for my status domain itself, each on a 60 second interval, and both show 100% uptime.
+5. `https://henryzg-status.duckdns.org/status/default` loads Uptime Kuma with no login required. I created two HTTPS monitors, one for my main domain and one for my status domain itself, each on a 60 second interval, and both show 100% uptime.
 6. `sudo fail2ban-client status` shows both my `sshd` and `nginx-botsearch` jails active, and I can already see real attackers being banned in my logs.
 7. I built four Grafana alert rules for CPU, memory, disk, and instance availability, all delivering to my email through an SMTP contact point, and I did not just trust the configuration. I deliberately generated real memory pressure on the server with `stress-ng`, watched the alert move from Normal to Pending to Firing in Grafana's own state history, and received a real email describing the exact threshold breach, confirmed in `docs/monitoring-setup.md`.
 8. I also tested my backup and restore process directly rather than only writing it down, deliberately deleting my live Grafana data volume and confirming it came back fully intact after running `scripts/restore.sh`, described in `docs/recovery-procedures.md`.
