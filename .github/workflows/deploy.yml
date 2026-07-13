@@ -15,7 +15,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd ~/itmo453-final
+            cd ~/itmo-453/itmo453-finalproject
             git pull --ff-only
             docker compose up -d --build --remove-orphans
             docker compose ps
