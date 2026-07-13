@@ -31,6 +31,8 @@ ls ~/backups
 
 My expected recovery time is under five minutes. Prometheus and Loki lose at most the hours since the last backup, which I consider acceptable for observability data specifically.
 
+**This procedure is not just written, I actually tested it.** I ran `scripts/backup.sh` manually to create a fresh tarball, then deliberately destroyed my live Grafana volume with `docker compose stop grafana`, `docker compose rm -f grafana`, and `docker volume rm itmo453_grafana-data`, confirming with `docker volume ls` that the volume was genuinely gone before attempting any recovery. I then ran `./scripts/restore.sh` with the backup's timestamp, which brought the full stack down and back up, and all eight containers returned to a running state within seconds. Logging into Grafana afterward confirmed every dashboard and datasource I had configured was still present, meaning the restore recovered real state rather than just starting a fresh, empty instance. The one cosmetic issue I hit was a warning that the recreated volume "already exists but was not created by Docker Compose," which did not affect the outcome and is simply a side effect of the restore script creating the volume manually before Compose starts.
+
 ## Scenario three, total server loss
 
 1. Create a new instance in OCI (A1.Flex or A2.Flex, whichever has capacity) and update both my DuckDNS records to the new public IP.
@@ -49,4 +51,4 @@ This sequence shows detection and recovery live in under five minutes.
 2. Run `docker compose stop grafana` on the server.
 3. Reload the main site to show the proxy returning a bad gateway, then show Kuma flipping to red.
 4. Run `docker compose start grafana`, reload the site, and show Kuma returning to green with the outage recorded in its history.
-5. Optionally show the deeper recovery path: `docker compose down`, `docker volume rm itmo453_grafana-data`, then `./scripts/restore.sh` with the latest timestamp, and log back into Grafana to prove my dashboards and datasources survived.
+5. Optionally show the deeper recovery path exactly as I tested it: delete the live Grafana volume entirely, run `./scripts/restore.sh` with the latest backup timestamp, and log back into Grafana to prove my dashboards and datasources survived, the same test described in Scenario two above.

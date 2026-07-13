@@ -40,20 +40,17 @@ Uptime Kuma runs at my status subdomain. I configured two HTTPS monitors, one ag
 
 ## Alerting
 
-I designed my alerting around a Discord webhook so no SMTP setup is needed. The steps to enable it:
+I built alerting through Grafana's own alert rules rather than Uptime Kuma's notifications, using email as the delivery channel instead of a chat webhook, since email reaches me reliably regardless of which device I am using.
 
-1. In Discord, create a channel, open its settings, create a webhook, and copy the URL.
-2. In Grafana go to Alerting, then Contact points, create one of type Discord, and paste the URL.
-3. Create an alert rule on the Prometheus datasource with this expression, evaluated every minute, firing after five minutes:
+**Contact point.** I generated a Gmail app password for `thyzeng@gmail.com`, since Gmail blocks plain password SMTP logins, and added the SMTP host, user, app password, and from address as environment variables that Grafana reads on startup. In Grafana under Alerting, then Contact points, I created a contact point named `email-alerts` using the Email integration, pointed at my Outlook address, and confirmed it with Grafana's built in test button before relying on it.
 
-```bash
-100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
-```
+**Alert rules.** I created four rules, all in a folder named `Infrastructure Alerts`, each built as a three part expression chain, a Prometheus query (A), a Reduce expression that collapses the time range to a single value using Last (B), and a Threshold expression that evaluates the actual condition (C), with C marked as the alert condition in every rule.
 
-4. Create a second rule for memory pressure:
+1. High CPU Usage: `100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)`, threshold above 85, evaluated every minute with a five minute pending period.
+2. High Memory Usage: `(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100`, threshold above 90, evaluated every minute with a five minute pending period.
+3. Low Disk Space: `100 - ((node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100)`, threshold above 80, evaluated every five minutes with a ten minute pending period.
+4. Instance Down: `up{job="node"}`, threshold below 1, evaluated every minute with a two minute pending period, since this is the rule that fires if Prometheus loses contact with node exporter entirely.
 
-```bash
-(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 90
-```
+**Verifying the alerts actually fire.** Writing an alert rule and trusting it work is not the same as confirming it does, so I tested this deliberately rather than assuming the configuration was correct. I installed `stress-ng` directly on the host and ran `stress-ng --vm 1 --vm-bytes 10G --vm-keep --timeout 120s` after temporarily shortening the High Memory Usage rule's pending period to make the test faster. Grafana's own alert state history showed the rule transition from Normal to Pending to Firing as memory usage climbed to roughly 95 percent, and a real email arrived in my Outlook inbox describing the exact threshold breach, with the query values included in the message body. I then restored the pending period back to five minutes so the rule behaves correctly under real production conditions rather than firing on brief, ordinary usage spikes.
 
-5. In Uptime Kuma, add the same Discord webhook under Notifications and attach it to both monitors, so downtime alerts arrive even if Grafana itself is the thing that is down.
+An earlier attempt at this same test produced a `DatasourceNoData` state instead of a real evaluation, which I initially mistook for a broken rule. Checking the alert rule's state history showed this had happened during a Grafana container restart performed minutes earlier to apply new SMTP environment variables, a brief window where Grafana had no live connection to Prometheus at all. Both affected rules returned to a normal, correctly evaluating state on their own once Grafana finished restarting, which I confirmed before running the real test described above.

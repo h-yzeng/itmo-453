@@ -62,7 +62,7 @@ cp .env.example .env
 nano .env
 ```
 
-I set `DOMAIN` and `STATUS_DOMAIN` to my real DuckDNS subdomains, and set a genuinely strong `GRAFANA_ADMIN_PASSWORD`, since this is publicly reachable and the only access control on my dashboards.
+I set `DOMAIN` and `STATUS_DOMAIN` to my real DuckDNS subdomains, a genuinely strong `GRAFANA_ADMIN_PASSWORD`, and later added SMTP variables so Grafana could send alert emails through my Gmail account, since this server is publicly reachable and email is the only place I can be notified of a real problem.
 
 I got the TLS certificate before starting the stack, since certbot needs port 80 free:
 
@@ -102,6 +102,8 @@ All 8 containers, proxy, grafana, prometheus, loki, promtail, node-exporter, cad
 4. I was not able to get dashboard `14282` (Docker Container Monitoring) working. My cAdvisor container cannot resolve per-container read-write layer IDs against Docker 29.6.1's containerd image store, a genuine version incompatibility rather than a misconfiguration on my part, I confirmed this by trying two different cAdvisor versions and hitting the identical failure both times. My host-level CPU, memory, disk, and network metrics from Node Exporter Full are unaffected and fully cover my monitoring requirement. I explain the full diagnostic process in `docs/monitoring-setup.md`.
 5. `https://henryzg-status.duckdns.org` loads Uptime Kuma with no login required. I created two HTTPS monitors, one for my main domain and one for my status domain itself, each on a 60 second interval, and both show 100% uptime.
 6. `sudo fail2ban-client status` shows both my `sshd` and `nginx-botsearch` jails active, and I can already see real attackers being banned in my logs.
+7. I built four Grafana alert rules for CPU, memory, disk, and instance availability, all delivering to my email through an SMTP contact point, and I did not just trust the configuration. I deliberately generated real memory pressure on the server with `stress-ng`, watched the alert move from Normal to Pending to Firing in Grafana's own state history, and received a real email describing the exact threshold breach, confirmed in `docs/monitoring-setup.md`.
+8. I also tested my backup and restore process directly rather than only writing it down, deliberately deleting my live Grafana data volume and confirming it came back fully intact after running `scripts/restore.sh`, described in `docs/recovery-procedures.md`.
 
 ## 5. Enabling automated deployment
 
@@ -114,15 +116,15 @@ In my GitHub repository settings, I added four Actions secrets under Settings â†
 | SSH_KEY  | the full contents of my private key file, including the BEGIN/END lines |
 | DOMAIN   | henryzg.duckdns.org                                                     |
 
-Every push I make to main now deploys automatically over SSH and finishes with an external health check against my live site.
+Every push I make to main now deploys automatically over SSH and finishes with an external health check against my live site. My first real deployment run through this pipeline hit one failure worth noting: my workflow file initially lived one folder too deep inside my monorepo for GitHub Actions to discover it at all, and no run appeared until I moved `.github/workflows/deploy.yml` to the repository root.
 
 ## Documentation portfolio
 
-| Document                    | Contents                                                     |
-| --------------------------- | ------------------------------------------------------------ |
-| docs/architecture.md        | Architecture diagram and component roles                     |
-| README.md                   | Deployment instructions, this file                           |
-| docs/security-controls.md   | Layered security design                                      |
-| docs/monitoring-setup.md    | Metrics, logs, uptime, alerting, and the cAdvisor limitation |
-| docs/recovery-procedures.md | Backups, three failure scenarios, live demo script           |
-| docs/maintenance-plan.md    | Ongoing operational cadence                                  |
+| Document                    | Contents                                                                    |
+| --------------------------- | --------------------------------------------------------------------------- |
+| docs/architecture.md        | Architecture diagram and component roles                                    |
+| README.md                   | Deployment instructions, this file                                          |
+| docs/security-controls.md   | Layered security design                                                     |
+| docs/monitoring-setup.md    | Metrics, logs, uptime, tested alerting, and the cAdvisor limitation         |
+| docs/recovery-procedures.md | Backups, three failure scenarios, a verified restore test, live demo script |
+| docs/maintenance-plan.md    | Ongoing operational cadence                                                 |
