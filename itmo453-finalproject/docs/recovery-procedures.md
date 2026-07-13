@@ -31,7 +31,52 @@ ls ~/backups
 
 My expected recovery time is under five minutes. Prometheus and Loki lose at most the hours since the last backup, which I consider acceptable for observability data specifically.
 
-**This procedure is not just written, I actually tested it.** I ran `scripts/backup.sh` manually to create a fresh tarball, then deliberately destroyed my live Grafana volume with `docker compose stop grafana`, `docker compose rm -f grafana`, and `docker volume rm itmo453_grafana-data`, confirming with `docker volume ls` that the volume was genuinely gone before attempting any recovery. I then ran `./scripts/restore.sh` with the backup's timestamp, which brought the full stack down and back up, and all eight containers returned to a running state within seconds. Logging into Grafana afterward confirmed every dashboard and datasource I had configured was still present, meaning the restore recovered real state rather than just starting a fresh, empty instance. The one cosmetic issue I hit was a warning that the recreated volume "already exists but was not created by Docker Compose," which did not affect the outcome and is simply a side effect of the restore script creating the volume manually before Compose starts.
+**This procedure is not just written, I actually tested it, using these exact commands.**
+
+Create a fresh backup to restore from:
+
+```bash
+cd ~/itmo-453/itmo453-finalproject
+chmod +x scripts/*.sh
+./scripts/backup.sh
+ls ~/backups
+```
+
+Note the timestamp in the resulting filename, for example `itmo453_grafana-data-20260713-060211.tar.gz`, the timestamp portion `20260713-060211` is what `restore.sh` expects as its argument.
+
+Deliberately destroy the live Grafana volume:
+
+```bash
+docker compose stop grafana
+docker compose rm -f grafana
+docker volume rm itmo453_grafana-data
+```
+
+Confirm it is actually gone before attempting any recovery, this step matters, skipping it means the test proves nothing:
+
+```bash
+docker volume ls | grep grafana
+```
+
+This should return no output at all.
+
+Restore from the backup taken earlier:
+
+```bash
+./scripts/restore.sh 20260713-060211
+```
+
+This stops the whole stack, recreates the Grafana volume from the tarball, and brings every container back up.
+
+Verify the recovery actually worked:
+
+```bash
+docker compose ps
+```
+
+All eight containers should show as running. Then log into Grafana in the browser and confirm the dashboards, datasources, and alert rules configured before the test are still present, since the whole point of this test is confirming real state was recovered, not just that a fresh, empty Grafana started successfully.
+
+One cosmetic warning appeared during my own test and can be ignored: `volume "itmo453_grafana-data" already exists but was not created by Docker Compose`. This happens because `restore.sh` creates the volume manually with `docker volume create` before Compose starts, and it does not affect the outcome.
 
 ## Scenario three, total server loss
 
