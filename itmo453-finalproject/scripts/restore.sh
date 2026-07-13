@@ -1,9 +1,4 @@
 #!/usr/bin/env bash
-# Name: Tenzor
-# Date: 07/12/2026
-# Course Number: ITMO-453
-# Assignment: Final Project
-# Description: Restores every persistent Docker volume from a backup timestamp and restarts the stack.
 
 set -euo pipefail
 

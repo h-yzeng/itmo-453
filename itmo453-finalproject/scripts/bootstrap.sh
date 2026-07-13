@@ -1,9 +1,4 @@
 #!/usr/bin/env bash
-# Name: Tenzor
-# Date: 07/12/2026
-# Course Number: ITMO-453
-# Assignment: Final Project
-# Description: One time provisioning script for the Oracle Cloud Ubuntu server.
 
 set -euo pipefail
 
