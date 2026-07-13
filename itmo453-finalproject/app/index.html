@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>itmo-453 · production deployment</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="card">
+    <div class="eyebrow">itmo-453 · final production deployment</div>
+    <h1>A self-hosted observability<br />platform, running in production.</h1>
+    <p class="lede">
+      This domain fronts a hardened Linux host running Grafana, Prometheus, Loki, and Uptime Kuma
+      behind TLS. <b>The deployed service is the monitoring platform itself</b>, not a demo app in
+      front of it, so what you reach here is the real, currently operating infrastructure.
+    </p>
+
+    <div class="term">
+      <div class="row"><span class="k">host</span><span class="v"><span class="status-dot"></span>henryzg.duckdns.org</span></div>
+      <div class="row"><span class="k">platform</span><span class="v">Oracle Cloud · Ampere A2.Flex · Ubuntu 24.04</span></div>
+      <div class="row"><span class="k">stack</span><span class="v">nginx · grafana · prometheus · loki · uptime-kuma</span></div>
+      <div class="row"><span class="k">tls</span><span class="v ok">Let's Encrypt, auto-renewing</span></div>
+      <div class="row"><span class="k">deploy</span><span class="v ok">GitHub Actions, on push to main</span></div>
+    </div>
+
+    <div class="actions">
+      <a class="btn primary" href="/grafana/">Open Dashboards →</a>
+      <a class="btn secondary" href="https://henryzg-status.duckdns.org" target="_blank" rel="noopener">View Status Page</a>
+    </div>
+
+    <footer>
+      <span>Grafana requires login. The status page is public, no account needed.</span>
+      <a href="https://github.com/h-yzeng/itmo-453" target="_blank" rel="noopener">github.com/h-yzeng/itmo-453</a>
+    </footer>
+  </div>
+</body>
+</html>
