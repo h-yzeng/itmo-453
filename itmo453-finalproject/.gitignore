@@ -1,0 +1,6 @@
+.env
+nginx/logs/
+app/node_modules/
+app/dist/
+app/build/
+backups/

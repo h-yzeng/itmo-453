@@ -1,0 +1,14 @@
+[DEFAULT]
+bantime = 1h
+findtime = 10m
+maxretry = 5
+banaction = ufw
+
+[sshd]
+enabled = true
+backend = systemd
+
+[nginx-botsearch]
+enabled = true
+port = http,https
+logpath = /home/ubuntu/itmo453-final/nginx/logs/access.log
