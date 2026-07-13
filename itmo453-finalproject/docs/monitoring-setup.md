@@ -1,6 +1,6 @@
 # Monitoring Setup
 
-I collect three signals in my deployment: metrics through Prometheus, logs through Loki, and availability through Uptime Kuma. Grafana is my single pane of glass, reachable at https://henryzg.duckdns.org.
+I collect three signals in my deployment: metrics through Prometheus, logs through Loki, and availability through Uptime Kuma. Grafana is my single pane of glass, reachable at [https://henryzg.duckdns.org](https://henryzg.duckdns.org).
 
 ## Metrics
 
